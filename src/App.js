@@ -1,79 +1,96 @@
+import React, { useRef, useEffect, useState } from 'react';
 import './App.css';
 
 function App() {
-  let timer;
-let isPaused = false;
-let isRunning = false;
-let timeLeft = 25 * 60; // 25 minutes
+  const startButtonRef = useRef(null);
+  const pauseButtonRef = useRef(null);
+  const resetButtonRef = useRef(null);
+  const minutesDisplayRef = useRef(null);
+  const secondsDisplayRef = useRef(null);
 
-const startButton = document.getElementById('start');
-const pauseButton = document.getElementById('pause');
-const resetButton = document.getElementById('reset');
-const minutesDisplay = document.getElementById('minutes');
-const secondsDisplay = document.getElementById('seconds');
+  const [timer, setTimer] = useState(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(25 * 60);
 
-startButton.addEventListener('click', startTimer);
-pauseButton.addEventListener('click', pauseTimer);
-resetButton.addEventListener('click', resetTimer);
+  useEffect(() => {
+    const startButton = startButtonRef.current;
+    const pauseButton = pauseButtonRef.current;
+    const resetButton = resetButtonRef.current;
 
-function startTimer() {
+    startButton.addEventListener('click', startTimer);
+    pauseButton.addEventListener('click', pauseTimer);
+    resetButton.addEventListener('click', resetTimer);
+
+    return () => {
+      startButton.removeEventListener('click', startTimer);
+      pauseButton.removeEventListener('click', pauseTimer);
+      resetButton.removeEventListener('click', resetTimer);
+    };
+  }, [isRunning, isPaused, timeLeft]);
+
+  function startTimer() {
     if (!isRunning) {
-        timer = setInterval(countdown, 1000);
-        isRunning = true;
-        isPaused = false;
+      const newTimer = setInterval(countdown, 1000);
+      setTimer(newTimer);
+      setIsRunning(true);
+      setIsPaused(false);
     }
-}
+  }
 
-function pauseTimer() {
+  function pauseTimer() {
     if (isRunning && !isPaused) {
-        clearInterval(timer);
-        isPaused = true;
+      clearInterval(timer);
+      setIsPaused(true);
     } else if (isRunning && isPaused) {
-        timer = setInterval(countdown, 1000);
-        isPaused = false;
+      const newTimer = setInterval(countdown, 1000);
+      setTimer(newTimer);
+      setIsPaused(false);
     }
-}
+  }
 
-function resetTimer() {
+  function resetTimer() {
     clearInterval(timer);
-    timeLeft = 25 * 60;
-    updateDisplay();
-    isRunning = false;
-    isPaused = false;
-}
+    setTimeLeft(25 * 60);
+    updateDisplay(25 * 60);
+    setIsRunning(false);
+    setIsPaused(false);
+  }
 
-function countdown() {
-    if (timeLeft <= 0) {
+  function countdown() {
+    setTimeLeft(prevTimeLeft => {
+      if (prevTimeLeft <= 0) {
         clearInterval(timer);
         alert('Time is up!');
-        return;
-    }
-    timeLeft--;
-    updateDisplay();
-}
+        return 0;
+      }
+      return prevTimeLeft - 1;
+    });
+  }
 
-function updateDisplay() {
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    minutesDisplay.textContent = minutes < 10 ? `0${minutes}` : minutes;
-    secondsDisplay.textContent = seconds < 10 ? `0${seconds}` : seconds;
-}
+  function updateDisplay(time) {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    minutesDisplayRef.current.textContent = minutes < 10 ? `0${minutes}` : minutes;
+    secondsDisplayRef.current.textContent = seconds < 10 ? `0${seconds}` : seconds;
+  }
+
+  useEffect(() => {
+    updateDisplay(timeLeft);
+  }, [timeLeft]);
 
   return (
-    <>
-    
-    <div class="container">
-        <h1>Pomodoro Timer</h1>
-        <div class="timer">
-            <span id="minutes">25</span>:<span id="seconds">00</span>
-        </div>
-        <div class="buttons">
-            <button id="start">Start</button>
-            <button id="pause">Pause</button>
-            <button id="reset">Reset</button>
-        </div>
+    <div className="container">
+      <h1>Pomodoro Timer</h1>
+      <div className="timer">
+        <span ref={minutesDisplayRef}>25</span>:<span ref={secondsDisplayRef}>00</span>
+      </div>
+      <div className="buttons">
+        <button ref={startButtonRef} id="start">Start</button>
+        <button ref={pauseButtonRef} id="pause">Pause</button>
+        <button ref={resetButtonRef} id="reset">Reset</button>
+      </div>
     </div>
-    </>
   );
 }
 
